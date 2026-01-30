@@ -86,5 +86,9 @@ class ComponentPalette(ttk.Frame):
         component_class = type_map.get(comp_type)
         
         if component_class:
-            # Dire au canvas quel composant placer au prochain clic
-            self.canvas.set_component_to_place(component_class)
+            # Wire est spécial - mode de connexion au lieu de placement
+            if component_class == Wire:
+                self.canvas.start_wire_mode()
+            else:
+                # Dire au canvas quel composant placer au prochain clic
+                self.canvas.set_component_to_place(component_class)

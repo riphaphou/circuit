@@ -95,7 +95,18 @@ class CircuitCanvas(tk.Canvas):
             component_type: Classe du composant à placer
         """
         self.component_to_place = component_type
+        self.drawing_wire = False  # Désactiver le mode fil
         self.config(cursor="crosshair")
+    
+    def start_wire_mode(self):
+        """
+        Active le mode de création de fil.
+        L'utilisateur doit cliquer sur deux composants pour créer un fil.
+        """
+        self.drawing_wire = True
+        self.wire_start = None
+        self.component_to_place = None  # Désactiver le mode placement
+        self.config(cursor="plus")
     
     def add_component(self, component_type, x, y):
         """
@@ -268,7 +279,37 @@ class CircuitCanvas(tk.Canvas):
             self.config(cursor="")
             return
         
-        # Vérifier si on a cliqué sur un composant
+        # Si on est en mode création de fil
+        if self.drawing_wire:
+            # Chercher un composant à la position cliquée
+            clicked_comp = self.find_component_at(event.x, event.y)
+            
+            if clicked_comp:
+                if not self.wire_start:
+                    # Premier clic - commencer le fil
+                    self.wire_start = (clicked_comp, event.x, event.y)
+                    # Créer une ligne temporaire
+                    self.temp_wire_id = self.create_line(
+                        event.x, event.y, event.x, event.y,
+                        fill='yellow', width=2, dash=(5, 5), tags='temp_wire'
+                    )
+                else:
+                    # Deuxième clic - terminer le fil
+                    start_comp = self.wire_start[0]
+                    if clicked_comp != start_comp:
+                        # Créer le fil
+                        self.create_wire(start_comp, clicked_comp)
+                    
+                    # Nettoyer
+                    if self.temp_wire_id:
+                        self.delete(self.temp_wire_id)
+                        self.temp_wire_id = None
+                    self.wire_start = None
+                    self.drawing_wire = False
+                    self.config(cursor="")
+            return
+        
+        # Vérifier si on a cliqué sur un composant pour le déplacer
         item = self.find_closest(event.x, event.y)[0]
         tags = self.gettags(item)
         
@@ -285,6 +326,13 @@ class CircuitCanvas(tk.Canvas):
     
     def on_drag(self, event):
         """Gestion du déplacement."""
+        # Si on dessine un fil temporaire, mettre à jour la ligne
+        if self.drawing_wire and self.wire_start and self.temp_wire_id:
+            start_x, start_y = self.wire_start[1], self.wire_start[2]
+            self.coords(self.temp_wire_id, start_x, start_y, event.x, event.y)
+            return
+        
+        # Sinon, déplacer le composant si on en a un
         if self.drag_data["item"]:
             # Calculer le déplacement
             dx = event.x - self.drag_data["x"]
@@ -326,3 +374,57 @@ class CircuitCanvas(tk.Canvas):
         self.delete("all")
         self.draw_grid()
         self.selected_component = None
+    
+    def find_component_at(self, x, y):
+        """
+        Trouve le composant à la position donnée.
+        
+        Args:
+            x, y: Coordonnées
+            
+        Returns:
+            Composant trouvé ou None
+        """
+        # Chercher l'élément le plus proche
+        item = self.find_closest(x, y)[0]
+        tags = self.gettags(item)
+        
+        if tags and tags[0].startswith("comp_"):
+            comp_name = tags[0].replace("comp_", "")
+            # Trouver le composant dans le circuit manager
+            for comp in self.circuit_manager.get_all_components():
+                if comp.name == comp_name:
+                    # Vérifier que le clic est assez proche
+                    distance = ((comp.x - x) ** 2 + (comp.y - y) ** 2) ** 0.5
+                    if distance < 50:  # Tolérance de 50 pixels
+                        return comp
+        return None
+    
+    def create_wire(self, start_comp, end_comp):
+        """
+        Crée un fil entre deux composants.
+        
+        Args:
+            start_comp: Composant de départ
+            end_comp: Composant d'arrivée
+        """
+        from components import Wire
+        
+        # Créer le fil
+        wire = Wire(
+            x=start_comp.x,
+            y=start_comp.y,
+            start_comp=start_comp,
+            end_comp=end_comp
+        )
+        wire.set_endpoints(start_comp.x, start_comp.y, end_comp.x, end_comp.y)
+        
+        # Ajouter au circuit manager
+        self.circuit_manager.add_component(wire)
+        
+        # Connecter les composants
+        start_comp.connect_to(end_comp)
+        end_comp.connect_to(start_comp)
+        
+        # Dessiner le fil
+        self.draw_component(wire)
