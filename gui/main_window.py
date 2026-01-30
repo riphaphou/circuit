@@ -19,11 +19,17 @@ class MainWindow(tk.Tk):
         
         self.title("Circuit Designer - Outil de conception de circuits électroniques")
         self.geometry("1200x800")
+        self.minsize(1000, 700)
         
         # Gestionnaire de circuit
         self.circuit_manager = CircuitManager()
         self.calculator = CircuitCalculator(self.circuit_manager)
         self.analyzer = CircuitAnalyzer(self.circuit_manager)
+        
+        # Configurer le grid pour la fenêtre principale
+        self.grid_rowconfigure(0, weight=0)  # Menu/toolbar (hauteur fixe)
+        self.grid_rowconfigure(1, weight=1)  # Contenu principal (extensible)
+        self.grid_columnconfigure(0, weight=1)
         
         # Créer l'interface
         self.create_menu()
@@ -76,7 +82,7 @@ class MainWindow(tk.Tk):
     def create_toolbar(self):
         """Crée la barre d'outils."""
         toolbar = ttk.Frame(self, relief=tk.RAISED)
-        toolbar.pack(side=tk.TOP, fill=tk.X, padx=2, pady=2)
+        toolbar.grid(row=0, column=0, sticky='ew', padx=2, pady=2)
         
         # Boutons
         ttk.Button(toolbar, text="📄 Nouveau", command=self.new_circuit).pack(side=tk.LEFT, padx=2)
@@ -94,33 +100,41 @@ class MainWindow(tk.Tk):
     
     def create_main_layout(self):
         """Crée la disposition principale."""
-        # Frame principal
+        # Frame principal qui contient les 3 panneaux + la zone de calculs
         main_frame = ttk.Frame(self)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        main_frame.grid(row=1, column=0, sticky='nsew', padx=5, pady=5)
         
-        # Panneau gauche - Palette de composants
+        # Configuration du main_frame pour le grid
+        main_frame.grid_rowconfigure(0, weight=1)  # Zone de travail (extensible)
+        main_frame.grid_columnconfigure(0, weight=0)  # Palette (largeur fixe ~150px)
+        main_frame.grid_columnconfigure(1, weight=10)  # Canvas (extensible)
+        main_frame.grid_columnconfigure(2, weight=0)  # Propriétés (largeur fixe ~200px)
+        
+        # 1. Panneau gauche - Palette de composants (largeur fixe)
         left_panel = ttk.LabelFrame(main_frame, text="Palette", width=150)
-        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5)
-        left_panel.pack_propagate(False)
+        left_panel.grid(row=0, column=0, sticky='ns', padx=5, pady=5)
+        left_panel.grid_propagate(False)  # Empêcher le rétrécissement
         
-        # Canvas central
+        # 2. Canvas central (extensible)
         center_panel = ttk.LabelFrame(main_frame, text="Circuit")
-        center_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+        center_panel.grid(row=0, column=1, sticky='nsew', padx=5, pady=5)
         
-        # Canvas de dessin
+        # Configuration du center_panel pour que le canvas s'étende
+        center_panel.grid_rowconfigure(0, weight=1)
+        center_panel.grid_columnconfigure(0, weight=1)
+        
+        # Canvas de dessin - utilise grid au lieu de pack
         self.canvas = CircuitCanvas(
             center_panel, 
             self.circuit_manager,
-            bg="white",
-            width=700,
-            height=500
+            bg="white"
         )
-        self.canvas.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.canvas.grid(row=0, column=0, sticky='nsew', padx=5, pady=5)
         
-        # Panneau droit - Propriétés
+        # 3. Panneau droit - Propriétés (largeur fixe)
         right_panel = ttk.LabelFrame(main_frame, text="Propriétés", width=200)
-        right_panel.pack(side=tk.RIGHT, fill=tk.Y, padx=5)
-        right_panel.pack_propagate(False)
+        right_panel.grid(row=0, column=2, sticky='ns', padx=5, pady=5)
+        right_panel.grid_propagate(False)  # Empêcher le rétrécissement
         
         # Créer les sous-panneaux
         self.palette = ComponentPalette(left_panel, self.canvas)
@@ -132,7 +146,10 @@ class MainWindow(tk.Tk):
     def create_results_panel(self):
         """Crée le panneau de résultats."""
         results_frame = ttk.LabelFrame(self, text="Résultats des calculs")
-        results_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
+        results_frame.grid(row=2, column=0, sticky='ew', padx=5, pady=5)
+        
+        # Configuration du grid pour le results_frame
+        self.grid_rowconfigure(2, weight=0)  # Hauteur fixe
         
         # Zone de texte pour les résultats
         self.results_text = tk.Text(results_frame, height=8, wrap=tk.WORD, bg="#f0f0f0")

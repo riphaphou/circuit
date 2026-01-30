@@ -26,6 +26,7 @@ class CircuitCanvas(tk.Canvas):
         self.temp_wire_id = None
         self.snap_to_grid = True
         self.grid_size = 20
+        self.component_to_place = None  # Type de composant à placer
         
         # Bindings pour la manipulation
         self.bind("<Button-1>", self.on_click)
@@ -33,13 +34,27 @@ class CircuitCanvas(tk.Canvas):
         self.bind("<ButtonRelease-1>", self.on_release)
         self.bind("<Button-3>", self.on_right_click)
         
-        # Dessiner la grille
+        # Redessiner la grille lors du redimensionnement
+        self.bind("<Configure>", self.on_resize)
+        
+        # Dessiner la grille initiale
         self.draw_grid()
     
     def draw_grid(self):
         """Dessine une grille sur le canvas."""
-        width = int(self.cget("width"))
-        height = int(self.cget("height"))
+        # Supprimer l'ancienne grille
+        self.delete("grid")
+        
+        # Obtenir les dimensions actuelles du canvas
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        
+        # Utiliser des dimensions minimales si le canvas n'est pas encore affiché
+        if width <= 1:
+            width = 700
+        if height <= 1:
+            height = 500
         
         # Lignes verticales
         for x in range(0, width, self.grid_size):
@@ -51,6 +66,11 @@ class CircuitCanvas(tk.Canvas):
         
         # Mettre la grille en arrière-plan
         self.tag_lower("grid")
+    
+    def on_resize(self, event):
+        """Gestionnaire de redimensionnement du canvas."""
+        # Redessiner la grille avec les nouvelles dimensions
+        self.draw_grid()
     
     def snap_position(self, x, y):
         """
@@ -66,6 +86,16 @@ class CircuitCanvas(tk.Canvas):
             x = round(x / self.grid_size) * self.grid_size
             y = round(y / self.grid_size) * self.grid_size
         return x, y
+    
+    def set_component_to_place(self, component_type):
+        """
+        Définit le type de composant à placer au prochain clic.
+        
+        Args:
+            component_type: Classe du composant à placer
+        """
+        self.component_to_place = component_type
+        self.config(cursor="crosshair")
     
     def add_component(self, component_type, x, y):
         """
@@ -229,6 +259,15 @@ class CircuitCanvas(tk.Canvas):
     
     def on_click(self, event):
         """Gestion du clic gauche."""
+        # Si on est en mode placement de composant
+        if self.component_to_place:
+            x, y = self.snap_position(event.x, event.y)
+            self.add_component(self.component_to_place, x, y)
+            # Réinitialiser le mode placement
+            self.component_to_place = None
+            self.config(cursor="")
+            return
+        
         # Vérifier si on a cliqué sur un composant
         item = self.find_closest(event.x, event.y)[0]
         tags = self.gettags(item)

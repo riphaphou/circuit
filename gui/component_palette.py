@@ -83,20 +83,8 @@ class ComponentPalette(ttk.Frame):
             'Wire': Wire
         }
         
-        self.selected_component_type = type_map.get(comp_type)
+        component_class = type_map.get(comp_type)
         
-        if self.selected_component_type:
-            # Activer le mode d'ajout sur le canvas
-            self.canvas.config(cursor="crosshair")
-            
-            # Binder le clic pour ajouter le composant
-            def add_on_click(event):
-                if self.selected_component_type:
-                    self.canvas.add_component(self.selected_component_type, event.x, event.y)
-                    self.selected_component_type = None
-                    self.canvas.config(cursor="")
-                    # Unbind
-                    self.canvas.unbind("<Button-1>", bind_id)
-            
-            # Stocker l'ID du binding pour pouvoir le supprimer
-            bind_id = self.canvas.bind("<Button-1>", add_on_click, add="+")
+        if component_class:
+            # Dire au canvas quel composant placer au prochain clic
+            self.canvas.set_component_to_place(component_class)
