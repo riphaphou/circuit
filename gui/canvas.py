@@ -2,11 +2,14 @@
 Canvas de dessin pour les circuits électroniques.
 """
 import tkinter as tk
-from components import *
+from components import Resistor, VoltageSource, CurrentSource, Capacitor, Inductor, Wire
 
 
 class CircuitCanvas(tk.Canvas):
     """Canvas pour dessiner et manipuler les composants du circuit."""
+    
+    # Constantes
+    COMPONENT_CLICK_TOLERANCE = 50  # Distance max en pixels pour cliquer sur un composant
     
     def __init__(self, master, circuit_manager, **kwargs):
         """
@@ -297,10 +300,11 @@ class CircuitCanvas(tk.Canvas):
                     # Deuxième clic - terminer le fil
                     start_comp = self.wire_start[0]
                     if clicked_comp != start_comp:
-                        # Créer le fil
+                        # Créer le fil entre deux composants différents
                         self.create_wire(start_comp, clicked_comp)
+                    # Si même composant, juste annuler le fil
                     
-                    # Nettoyer
+                    # Nettoyer dans tous les cas
                     if self.temp_wire_id:
                         self.delete(self.temp_wire_id)
                         self.temp_wire_id = None
@@ -342,6 +346,9 @@ class CircuitCanvas(tk.Canvas):
             comp = self.drag_data["item"]
             comp.x += dx
             comp.y += dy
+            
+            # Mettre à jour les fils connectés à ce composant
+            self.update_connected_wires(comp)
             
             # Redessiner
             self.draw_component(comp)
@@ -396,7 +403,7 @@ class CircuitCanvas(tk.Canvas):
                 if comp.name == comp_name:
                     # Vérifier que le clic est assez proche
                     distance = ((comp.x - x) ** 2 + (comp.y - y) ** 2) ** 0.5
-                    if distance < 50:  # Tolérance de 50 pixels
+                    if distance < self.COMPONENT_CLICK_TOLERANCE:
                         return comp
         return None
     
@@ -428,3 +435,31 @@ class CircuitCanvas(tk.Canvas):
         
         # Dessiner le fil
         self.draw_component(wire)
+    
+    def update_connected_wires(self, component):
+        """
+        Met à jour les positions des fils connectés à un composant.
+        
+        Args:
+            component: Composant qui a été déplacé
+        """
+        # Chercher tous les fils connectés à ce composant
+        for wire in self.circuit_manager.get_all_wires():
+            if isinstance(wire, Wire):
+                needs_update = False
+                
+                # Mettre à jour le point de départ si c'est le composant de départ
+                if wire.start_component == component:
+                    wire.start_x = component.x
+                    wire.start_y = component.y
+                    needs_update = True
+                
+                # Mettre à jour le point d'arrivée si c'est le composant d'arrivée
+                if wire.end_component == component:
+                    wire.end_x = component.x
+                    wire.end_y = component.y
+                    needs_update = True
+                
+                # Redessiner le fil si nécessaire
+                if needs_update:
+                    self.draw_component(wire)
