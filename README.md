@@ -1,5 +1,7 @@
 # Circuit Designer 🔌⚡
 
+> **✨ Mise à jour importante:** Ce projet a récemment bénéficié de corrections majeures de l'interface. Voir [SUMMARY.md](SUMMARY.md) pour les détails.
+
 ## Description
 
 **Circuit Designer** est un outil complet en Python pour créer, éditer et analyser des schémas de circuits électroniques avec une interface graphique intuitive développée avec Tkinter.
