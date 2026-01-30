@@ -11,7 +11,12 @@ class Component:
         self.y = y
         self.id = component_id
         self.canvas_items = []  # IDs des éléments canvas
-        self.pins = []  # Positions des bornes [(x, y), ...]
+        self._pin_offsets = []  # Offsets relatifs des bornes [(dx, dy), ...]
+        
+    @property
+    def pins(self):
+        """Retourne les positions absolues des bornes basées sur la position actuelle"""
+        return [(self.x + dx, self.y + dy) for dx, dy in self._pin_offsets]
         
     def draw(self, canvas, theme):
         """Dessine le composant sur le canvas"""
@@ -19,11 +24,12 @@ class Component:
         
     def get_nearest_pin(self, x, y):
         """Retourne la borne la plus proche du point (x, y)"""
-        if not self.pins:
+        pins = self.pins
+        if not pins:
             return None
         min_dist = float('inf')
         nearest = None
-        for px, py in self.pins:
+        for px, py in pins:
             dist = ((px - x)**2 + (py - y)**2)**0.5
             if dist < min_dist:
                 min_dist = dist
@@ -44,8 +50,8 @@ class Resistor(Component):
         self.value = value  # en ohms
         self.width = 60
         self.height = 20
-        # Bornes aux extrémités gauche et droite
-        self.pins = [(x - 40, y), (x + 40, y)]
+        # Bornes aux extrémités gauche et droite (offsets relatifs)
+        self._pin_offsets = [(-40, 0), (40, 0)]
         
     def draw(self, canvas, theme):
         """Dessine la résistance"""
@@ -73,8 +79,8 @@ class Battery(Component):
     def __init__(self, x, y, component_id, voltage=9):
         super().__init__(x, y, component_id)
         self.voltage = voltage  # en volts
-        # Bornes en haut (positif) et en bas (négatif)
-        self.pins = [(x, y - 30), (x, y + 30)]
+        # Bornes en haut (positif) et en bas (négatif) (offsets relatifs)
+        self._pin_offsets = [(0, -30), (0, 30)]
         
     def draw(self, canvas, theme):
         """Dessine la batterie"""
@@ -108,8 +114,8 @@ class LED(Component):
     
     def __init__(self, x, y, component_id):
         super().__init__(x, y, component_id)
-        # Bornes aux extrémités
-        self.pins = [(x - 30, y), (x + 30, y)]
+        # Bornes aux extrémités (offsets relatifs)
+        self._pin_offsets = [(-30, 0), (30, 0)]
         
     def draw(self, canvas, theme):
         """Dessine la LED"""
@@ -140,7 +146,8 @@ class Switch(Component):
     def __init__(self, x, y, component_id, closed=True):
         super().__init__(x, y, component_id)
         self.closed = closed
-        self.pins = [(x - 30, y), (x + 30, y)]
+        # Bornes aux extrémités (offsets relatifs)
+        self._pin_offsets = [(-30, 0), (30, 0)]
         
     def draw(self, canvas, theme):
         """Dessine l'interrupteur"""

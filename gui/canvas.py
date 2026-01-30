@@ -88,7 +88,11 @@ class CircuitCanvas(tk.Canvas):
             if img.mode != 'RGBA':
                 img = img.convert('RGBA')
             
-            alpha = int(255 * (self.theme_manager.background_opacity / 100))
+            # Appliquer l'opacité en modifiant le canal alpha
+            opacity_factor = self.theme_manager.background_opacity / 100.0
+            alpha = img.split()[3]  # Obtenir le canal alpha
+            # Multiplier chaque valeur alpha par le facteur d'opacité
+            alpha = alpha.point(lambda p: int(p * opacity_factor))
             img.putalpha(alpha)
             
             # Convertir pour Tkinter

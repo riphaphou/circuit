@@ -84,11 +84,23 @@ class ThemeManager:
         
     def load_background_image(self, path):
         """Charge une image de fond"""
-        if os.path.exists(path):
+        if not os.path.exists(path):
+            return False
+        
+        # Valider que c'est une image valide
+        try:
+            from PIL import Image
+            with Image.open(path) as img:
+                img.verify()  # Vérifier l'intégrité de l'image
+            # Réouvrir car verify() ferme le fichier
+            with Image.open(path) as img:
+                img.load()  # Charger les données
             self.background_image_path = path
             self.save_preferences()
             return True
-        return False
+        except Exception as e:
+            print(f"Erreur lors de la validation de l'image: {e}")
+            return False
         
     def remove_background_image(self):
         """Supprime l'image de fond"""
