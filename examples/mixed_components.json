@@ -1,0 +1,42 @@
+{
+  "components": [
+    {
+      "type": "VoltageSource",
+      "id": 1,
+      "name": "V1",
+      "value": 5,
+      "x": 100,
+      "y": 200,
+      "connections": [],
+      "polarity": "+"
+    },
+    {
+      "type": "Resistor",
+      "id": 2,
+      "name": "R1",
+      "value": 220,
+      "x": 300,
+      "y": 200,
+      "connections": []
+    },
+    {
+      "type": "Capacitor",
+      "id": 3,
+      "name": "C1",
+      "value": 0.0001,
+      "x": 500,
+      "y": 200,
+      "connections": []
+    },
+    {
+      "type": "Inductor",
+      "id": 4,
+      "name": "L1",
+      "value": 0.01,
+      "x": 700,
+      "y": 200,
+      "connections": []
+    }
+  ],
+  "wires": []
+}
